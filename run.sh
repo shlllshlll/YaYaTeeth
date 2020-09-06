@@ -215,7 +215,7 @@ case $key in
     help)
     check_cmd_flag
     cmd_flag=1
-    echo "run.sh [-G|--gpu 0|1 -P|--path s1|swf] build|train_bright|train_ori|export|eval|help|eval"
+    echo "run.sh [-G|--gpu 0|1 -M|--model deeplab|hrnet -P|--pc s1|pc|swf] build|train_bright|train_ori|export|eval|help|eval"
     shift
     ;;
     *)
