@@ -4,6 +4,7 @@
 # Written by Ke Sun (sunk@mail.ustc.edu.cn)
 # ------------------------------------------------------------------------------
 
+import imghdr
 import logging
 import os
 import time
@@ -74,6 +75,7 @@ def validate(config, testloader, model, writer_dict):
             image, label, _, _ = batch
             size = label.size()
             label = label.long().cuda()
+            image = image.cuda()
 
             losses, pred = model(image, label)
             pred = F.upsample(input=pred, size=(

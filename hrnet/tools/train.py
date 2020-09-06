@@ -190,7 +190,7 @@ def main():
             checkpoint = torch.load(model_state_file)
             best_mIoU = checkpoint['best_mIoU']
             last_epoch = checkpoint['epoch']
-            model.module.load_state_dict(checkpoint['state_dict'])
+            model.model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             logger.info("=> loaded checkpoint (epoch {})"
                         .format(checkpoint['epoch']))
@@ -216,21 +216,21 @@ def main():
         torch.save({
             'epoch': epoch+1,
             'best_mIoU': best_mIoU,
-            'state_dict': model.module.state_dict(),
+            'state_dict': model.model.state_dict(),
             'optimizer': optimizer.state_dict(),
         }, os.path.join(final_output_dir,'checkpoint.pth.tar'))
         valid_loss, mean_IoU, IoU_array = validate(
                         config, testloader, model, writer_dict)
         if mean_IoU > best_mIoU:
             best_mIoU = mean_IoU
-            torch.save(model.module.state_dict(),
+            torch.save(model.model.state_dict(),
                        os.path.join(final_output_dir, 'best.pth'))
         msg = 'Loss: {:.3f}, MeanIU: {: 4.4f}, Best_mIoU: {: 4.4f}'.format(
                     valid_loss, mean_IoU, best_mIoU)
         logging.info(msg)
         logging.info(IoU_array)
 
-    torch.save(model.module.state_dict(),
+    torch.save(model.model.state_dict(),
                os.path.join(final_output_dir, 'final_state.pth'))
 
     writer_dict['writer'].close()
