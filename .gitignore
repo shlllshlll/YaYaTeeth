@@ -3,3 +3,4 @@
 /.vscode
 /docs
 /eval
+.DS_store
