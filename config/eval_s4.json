@@ -1,0 +1,95 @@
+{
+    "datasets": [
+        {
+            "name": "teethdata0814",
+            "base": "eval/teethdata0814",
+            "gt": "SegmentationClass",
+            "ori_path": "/home/shlll/Dataset/teeth/teethdata0814"
+        },
+        {
+            "name": "0819camonly",
+            "base": "eval/0819camonly",
+            "gt": "SegmentationClass",
+            "ori_path": "/home/shlll/Dataset/teeth/0819camonly"
+        }
+    ],
+    "models": [
+        {
+            "name": "0813",
+            "export": {
+                "override": false,
+                "num_classes": 4,
+                "iters": [
+                    286778
+                ],
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "iters": 286778,
+                    "path": "trained_model/0813_286778.pb"
+                }
+            ]
+        },
+        {
+            "name": "0819aug",
+            "export": {
+                "override": false,
+                "num_classes": 4,
+                "iters": [
+                    240973
+                ],
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "iters": 240973,
+                    "path": "trained_model/0819aug_240973.pb"
+                }
+            ]
+        },
+        {
+            "name": "0819camonly",
+            "export": {
+                "override": false,
+                "num_classes": 3,
+                "iters": [
+                    231600
+                ],
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "iters": 231600,
+                    "path": "trained_model/0819camonly_231600.pb"
+                }
+            ]
+        },
+        {
+            "name": "teethdata0821",
+            "export": {
+                "override": false,
+                "num_classes": 3,
+                "iters": [
+                    233513
+                ],
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "iters": 233513,
+                    "path": "trained_model/teethdata0821_233513.pb"
+                }
+            ]
+        }
+    ],
+    "enabled": {
+        "datasets": [
+            "teethdata0814",
+            "0819camonly"
+        ],
+        "models": [
+            "teethdata0821"
+        ]
+    }
+}

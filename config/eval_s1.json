@@ -1,0 +1,85 @@
+{
+    "datasets": [
+        {
+            "name": "0529",
+            "base": "eval/full-VOC_adult_20200529",
+            "gt": "SegmentationClass"
+        },
+        {
+            "name": "0606",
+            "base": "eval/full-VOC_adult_20200606_0529",
+            "gt": "SegmentationClass"
+        }
+    ],
+    "models": [
+        {
+            "name": "crop_aug_color",
+            "export": {
+                "override": false,
+                "num_classes": 3,
+                "iters": [
+                    143929,
+                    420000
+                ],
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "iters": 143929,
+                    "path": "trained_model/crop_aug_color_143929.pb"
+                },
+                {
+                    "iters": 420000,
+                    "path": "trained_model/crop_aug_color_420000.pb"
+                }
+            ]
+        },
+        {
+            "name": "ori",
+            "export": {
+                "override": false,
+                "num_classes": 21,
+                "iters": [
+                    249683,
+                    620000
+                ],
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "iters": 249683,
+                    "path": "trained_model/ori_249683.pb"
+                },
+                {
+                    "iters": 620000,
+                    "path": "trained_model/ori_620000.pb"
+                }
+            ]
+        },
+        {
+            "name": "0515",
+            "export": {
+                "override": false,
+                "num_classes": 3,
+                "iters": [
+                    420000
+                ],
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "iters": 420000,
+                    "path": "trained_model/0515_420000.pb"
+                }
+            ]
+        }
+    ],
+    "enabled": {
+        "datasets": [
+            "0606"
+        ],
+        "models": [
+            "ori"
+        ]
+    }
+}

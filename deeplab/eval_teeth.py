@@ -71,7 +71,8 @@ class DeepLabModel(object):
     def run_dir(self, image_dir, output_dir):
         image_dir = Path(image_dir)
         if not image_dir.exists():
-            raise FileNotFoundError(f"The input image directory '{str(image_dir)}' is not exists.")
+            raise FileNotFoundError(
+                f"The input image directory '{str(image_dir)}' is not exists.")
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 

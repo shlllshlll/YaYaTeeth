@@ -9,6 +9,7 @@
 '''
 
 import json
+import shutil
 from pathlib import Path
 import json
 import warnings
@@ -30,6 +31,7 @@ class EvalMetirc(object):
     def __init__(self, config_path):
         super().__init__()
         self._read_config(config_path)
+        self._preprocess_dataset()
         status = self._export_model()
         if status:
             print('=> Export model not sucess.')
@@ -80,7 +82,8 @@ class EvalMetirc(object):
         ground_truth = base_path / 'SegmentationClass'
         source_img = base_path / 'JPEGImages'
         source_img_tumb = base_path / 'JPEGImages_tumb'
-        gt_vis = base_path / 'newSegmentationClass_vis'
+        # gt_vis = base_path / 'newSegmentationClass_vis'
+        gt_vis = base_path / 'SegmentationClass'
         gt_vis_tumb = base_path / 'newSegmentationClass_vis_tumb'
 
         numpy_result = base_path / 'result'
@@ -104,7 +107,10 @@ class EvalMetirc(object):
 
             # Open images and numpy arrays.
             src_img = Image.open(str(source_img_path)).resize((513, 513))
-            gt_vis_img = Image.open(gt_vis_path)
+            gt_vis_img = np.array(Image.open(gt_vis_path))
+            gt_vis_img[gt_vis_img == 1] = 128
+            gt_vis_img[gt_vis_img == 2] = 255
+            gt_vis_img = Image.fromarray(gt_vis_img)
             res_np = np.load(str(result_np_path))
 
             # Draw result images.
@@ -129,13 +135,17 @@ class EvalMetirc(object):
         acc_sum = 0
         count = 0
 
-        for i, source_img_path in enumerate(tqdm(sorted(list(source_img.glob('*'))))):
+        for source_img_path in tqdm(sorted(list(source_img.glob('*')))):
             key = source_img_path.stem
             source_img_tumb_path = source_img_tumb / source_img_path.name
             gt_img_path = eval_gt_path / (key + '.png')
             gt_vis_tumb_path = gt_vis_tumb / (key + '.png')
             teeth_res_vis_path = vis_result_tumb / (key + '.jpg')
             teeth_numpy_path = numpy_result / (key + '.npy')
+
+            if np.load(teeth_numpy_path).shape != (513, 513):
+                continue
+
             iou, acc = self._compute_metric(teeth_numpy_path, gt_img_path)
 
             count += 1
@@ -144,7 +154,7 @@ class EvalMetirc(object):
             iou = f'{iou:.5f}'
             acc = f'{acc:.5f}'
 
-            row = table.rows[i+1]
+            row = table.rows[count]
             self._docx_add_row(
                 row, [source_img_tumb_path, gt_vis_tumb_path, teeth_res_vis_path], iou, acc)
 
@@ -153,6 +163,48 @@ class EvalMetirc(object):
         paragraph.add_run(f"MIOU:{miou}, MACC:{macc}")
         document.save(
             str(doc_path / f'{model_name}_{dataset_name}_{iters}.docx'))
+
+    def _preprocess_dataset(self):
+        for name, dataset in self.datasets.items():
+            if "ori_path" in dataset:
+                print(f"==>数据集[{name}]预处理，生成测试集")
+                ori_path = Path(dataset['ori_path'])
+                ori_src_path = ori_path / 'JPEGImages'
+                ori_gt_path = ori_path / 'SegmentationClass'
+                dst_path = Path(dataset['path'])
+                dst_src_path = dst_path / 'JPEGImages'
+                dst_gt_path = dst_path / dataset['gt']
+
+                if dst_path.exists():
+                    shutil.rmtree(dst_path)
+                    # continue
+                dst_path.mkdir()
+                dst_src_path.mkdir()
+                dst_gt_path.mkdir()
+
+                val_file = ori_path / "ImageSets/Segmentation/val.txt"
+                val_file_list = self._read_summary_file(val_file)
+                for val_file_name in tqdm(val_file_list):
+                    val_file_src_name = val_file_name + '.jpg'
+                    val_file_gt_name = val_file_name + '.png'
+                    ori_src_img = ori_src_path / val_file_src_name
+                    dst_src_img = dst_src_path / val_file_src_name
+                    ori_gt_img = ori_gt_path / val_file_gt_name
+                    dst_gt_img = dst_gt_path / val_file_gt_name
+
+                    if ori_src_img.exists() and ori_gt_img.exists():
+                        os.link(ori_src_img, dst_src_img)
+                        os.link(ori_gt_img, dst_gt_img)
+
+    def _read_summary_file(self, path):
+        summary_list = []
+        with open(path, 'r') as f:
+            for line in f:
+                if (line[-1] == '\n'):
+                    line = line[:-1]
+                summary_list.append(line)
+
+        return summary_list
 
     def _export_model(self):
         for name, model in self.models.items():
@@ -205,10 +257,15 @@ class EvalMetirc(object):
         self.tasks = config['enabled']
 
         for dataset in config['datasets']:
-            self.datasets[dataset['name']] = {
+            option = {
                 'path': dataset['base'],
                 'gt': dataset['gt']
             }
+
+            if 'ori_path' in dataset:
+                option['ori_path'] = dataset['ori_path']
+
+            self.datasets[dataset['name']] = option
         for model in config['models']:
             self.models[model['name']] = {
                 'export': model['export'],

@@ -1,0 +1,40 @@
+{
+    "datasets": [
+        {
+            "name": "0510",
+            "base": "eval/full-VOC(adult)20200510",
+            "gt": "newSegmentationClass"
+        },
+        {
+            "name": "0512",
+            "base": "eval/full-VOC_adult_20200512",
+            "gt": "SegmentationClass"
+        },
+        {
+            "name": "0513",
+            "base": "eval/full-VOC_adult_20200512",
+            "gt": "SegmentationClass"
+        }
+    ],
+    "models": [
+        {
+            "name": "2166",
+            "frozens": [
+                {
+                    "iters": 121090,
+                    "path": "trained_model/2166_121090.pb"
+                }
+            ]
+        }
+    ],
+    "enabled": {
+        "datasets": [
+            "0510",
+            "0512",
+            "0513"
+        ],
+        "models": [
+            "2166"
+        ]
+    }
+}
