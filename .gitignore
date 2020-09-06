@@ -3,3 +3,4 @@
 /.vscode
 /config
 /eval
+.DS_store
