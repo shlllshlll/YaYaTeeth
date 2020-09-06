@@ -1,7 +1,6 @@
 #! /bin/bash
 
 build_data() {
-    cmd_prefix=$1
     cmd=''${cmd_prefix}'python deeplab/datasets/build_voc2012_data.py'
 
     mkdir -p tfrecord
@@ -9,30 +8,38 @@ build_data() {
 }
 
 train_model() {
-    cmd_prefix=$1
-    postfix=$2
+    postfix=$1
 
-    cmd=''${cmd_prefix}'python deeplab/train.py
-        --logtostderr
-        --training_number_of_steps=420000
-        --train_split="train"
-        --model_variant="xception_65"
-        --atrous_rates=6
-        --atrous_rates=12
-        --atrous_rates=18
-        --output_stride=16
-        --decoder_output_stride=4
-        --train_crop_size="513,513"
-        --tf_initial_checkpoint="./pretrain/model.ckpt"
-        --train_batch_size=4
-        --dataset="teeth"
-        --train_logdir="./train_log_'${postfix}'"
-        --dataset_dir="./tfrecord_'${postfix}'"'
+    case $MODEL in
+        deeplab)
+        cmd=''${cmd_prefix}'python deeplab/train.py
+            --logtostderr
+            --training_number_of_steps=420000
+            --train_split="train"
+            --model_variant="xception_65"
+            --atrous_rates=6
+            --atrous_rates=12
+            --atrous_rates=18
+            --output_stride=16
+            --decoder_output_stride=4
+            --train_crop_size="513,513"
+            --tf_initial_checkpoint="./pretrain/deeplab/model.ckpt"
+            --train_batch_size=4
+            --dataset="teeth"
+            --train_logdir="./train_log_'${postfix}'"
+            --dataset_dir="./tfrecord_'${postfix}'"'
+        ;;
+        hrnet)
+        cmd=''${cmd_prefix}'python hrnet/tools/train.py
+            --cfg config/hrnet.yaml
+            DATASET.ROOT '${dataset_path}'/'${postfix}''
+        ;;
+    esac
+
     eval $cmd
 }
 
 train_model_bright() {
-    cmd_prefix=$1
     cmd=''${cmd_prefix}'python deeplab/train.py
         --logtostderr
         --training_number_of_steps=420000
@@ -46,58 +53,14 @@ train_model_bright() {
         --train_crop_size="513,513"
         --train_batch_size=2
         --dataset="teeth"
-        --tf_initial_checkpoint="./pretrain/model.ckpt"
+        --tf_initial_checkpoint="./pretrain/deeplab/model.ckpt"
         --train_logdir="./train_log_bright"
         --dataset_dir="./tfrecord_bright"
         --fine_tune_batch_norm=False'
     eval $cmd
 }
 
-
-train_model_ori() {
-    cmd_prefix=$1
-    cmd=''${cmd_prefix}'python deeplab/train.py
-        --logtostderr
-        --training_number_of_steps=620000
-        --train_split="train"
-        --model_variant="xception_65"
-        --atrous_rates=6
-        --atrous_rates=12
-        --atrous_rates=18
-        --output_stride=16
-        --decoder_output_stride=4
-        --train_crop_size="513,513"
-        --train_batch_size=2
-        --dataset="teeth21"
-        --tf_initial_checkpoint="./pretrain/model.ckpt"
-        --train_logdir="./train_log_ori"
-        --dataset_dir="./tfrecord_ori"
-        --fine_tune_batch_norm=False'
-    eval $cmd
-}
-
-train_model_2166() {
-    cmd_prefix=$1
-    cmd=''${cmd_prefix}'python deeplab/train.py
-        --logtostderr
-        --training_number_of_steps=420000
-        --train_split="train"
-        --model_variant="xception_65"
-        --atrous_rates=6
-        --atrous_rates=12
-        --atrous_rates=18
-        --output_stride=16
-        --decoder_output_stride=4
-        --train_crop_size="513,513"
-        --train_batch_size=8
-        --dataset="teeth4"
-        --train_logdir="./train_log_2166"
-        --dataset_dir="./tfrecord_2166"'
-    eval $cmd
-}
-
 export_model() {
-    cmd_prefix=$1
     cmd=''${cmd_prefix}'python deeplab/export_model.py
         --atrous_rates=6
         --atrous_rates=12
@@ -112,14 +75,12 @@ export_model() {
 }
 
 eval_teeth() {
-    cmd_prefix=$1
     shift
     cmd=''${cmd_prefix}'python deeplab/eval_teeth.py '${*}''
     eval $cmd
 }
 
 eval_metric() {
-    cmd_prefix=$1
     shift
     cmd=''${cmd_prefix}'python deeplab/eval_metric.py '${*}''
     eval $cmd
@@ -130,10 +91,17 @@ eval_metric() {
 # $1: cmd_flag
 #==================================
 check_cmd_flag() {
-    cmd_flag=$1
     if [[ cmd_flag -eq 1 ]]
     then
         echo "Multiple command found."
+        exit 1
+    fi
+}
+
+check_option_flag() {
+    if [[ cmd_flag -eq 1 ]]
+    then
+        echo "Please use option in front of command"
         exit 1
     fi
 }
@@ -146,6 +114,7 @@ fi
 
 cmd_flag=0
 cmd_prefix="pipenv run "
+dataset_path="/home/shlll/Dataset/teeth"
 
 while [[ $# -gt 0 ]]
 do
@@ -153,23 +122,30 @@ key="$1"
 
 case $key in
     -G|--gpu)
-    if [[ cmd_flag -eq 1 ]]
-    then
-        echo "Please use option in front of command."
-        exit 1
-    fi
+    check_option_flag
     GPU_DEVICE="$2"
     shift # past argument
     shift # past value
     export CUDA_DEVICE_ORDER="PCI_BUS_ID"
     export CUDA_VISIBLE_DEVICES=$GPU_DEVICE
     ;;
-    -M|--mode)
-    if [[ cmd_flag -eq 1 ]]
-    then
-        echo "Please use option in front of command."
-        exit 1
-    fi
+    -M|--model)
+    check_option_flag
+    MODEL="$2"
+    shift
+    shift
+    case $MODEL in
+        deeplab)
+        ;;
+        hrnet)
+        # conda activate hrnet
+        ;;
+        *)
+        echo "Model parameter '${MODEL}' not supported."
+    esac
+    ;;
+    -P|--pc)
+    check_option_flag
     MODE="$2"
     shift
     shift
@@ -193,14 +169,14 @@ case $key in
     esac
     ;;
     build)
-    check_cmd_flag "$cmd_flag"
+    check_cmd_flag
     echo "Generating tfrecord of dataset."
     cmd_flag=1
-    build_data "$cmd_prefix"
+    build_data
     shift
     ;;
     train)
-    check_cmd_flag "$cmd_flag"
+    check_cmd_flag
     echo "Start training..."
     if [ ! -n "$2" ]
     then
@@ -208,57 +184,36 @@ case $key in
         exit 1
     fi
     cmd_flag=1
-    train_model "$cmd_prefix" $2
+    train_model $2
     shift
-    shift
-    ;;
-    train_bright)
-    check_cmd_flag "$cmd_flag"
-    echo "Start training..."
-    cmd_flag=1
-    train_model_bright "$cmd_prefix"
-    shift
-    ;;
-    train_ori)
-    check_cmd_flag "$cmd_flag"
-    echo "Start training..."
-    cmd_flag=1
-    train_model_ori "$cmd_prefix"
-    shift
-    ;;
-    train_2166)
-    check_cmd_flag "$cmd_flag"
-    echo "Start training..."
-    cmd_flag=1
-    train_model_2166 "$cmd_prefix"
     shift
     ;;
     export)
-    check_cmd_flag "$cmd_flag"
+    check_cmd_flag
     echo "Start model exporting..."
     cmd_flag=1
-    export_model "$cmd_prefix"
+    export_model
     shift
     ;;
     eval_teeth)
-    check_cmd_flag "$cmd_flag"
+    check_cmd_flag
     echo "Start evaluating test images..."
     cmd_flag=1
-    eval_teeth "$cmd_prefix" $2 $3
+    eval_teeth $2 $3
     shift
     shift
     shift
     ;;
     eval)
-    check_cmd_flag "$cmd_flag"
+    check_cmd_flag
     cmd_flag=1
-    eval_metric "$cmd_prefix" $2 $3
+    eval_metric $2 $3
     shift
     shift
     shift
     ;;
     help)
-    check_cmd_flag "$cmd_flag"
+    check_cmd_flag
     cmd_flag=1
     echo "run.sh [-G|--gpu 0|1 -P|--path s1|swf] build|train_bright|train_ori|export|eval|help|eval"
     shift

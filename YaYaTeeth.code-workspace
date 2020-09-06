@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../HRNet-Semantic-Segmentation"
 		}
 	],
 	"settings": {}

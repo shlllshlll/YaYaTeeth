@@ -4,3 +4,4 @@
 /docs
 /eval
 .DS_store
+*.pyc
