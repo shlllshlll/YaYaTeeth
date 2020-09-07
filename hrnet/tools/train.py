@@ -163,7 +163,8 @@ def main():
 
     model = FullModel(model, criterion)
     # model = nn.DataParallel(model, device_ids=gpus).cuda()
-    model.to(f'cuda:{gpus[0]}')
+    # model.to(f'cuda:{gpus[0]}')
+    model.cuda()
 
     # optimizer
     if config.TRAIN.OPTIMIZER == 'sgd':
