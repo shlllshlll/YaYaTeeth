@@ -75,14 +75,12 @@ export_model() {
 }
 
 eval_teeth() {
-    shift
     cmd=''${cmd_prefix}'python deeplab/eval_teeth.py '${*}''
     eval $cmd
 }
 
 eval_metric() {
-    shift
-    cmd=''${cmd_prefix}'python deeplab/eval_metric.py '${*}''
+    cmd=''${cmd_prefix}'python eval_metric.py '${*}''
     eval $cmd
 }
 

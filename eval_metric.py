@@ -23,8 +23,6 @@ import numpy as np
 from PIL import Image, ImageDraw
 from docx import Document
 
-from deeplab.eval_teeth import DeepLabModel
-
 
 class EvalMetirc(object):
 
@@ -51,26 +49,37 @@ class EvalMetirc(object):
                 iters = frozen['iters']
                 print(f"=> Evaluating model:{model_name}, iter: {iters}")
 
-                try:
+                # try:
+                if model_config['type'] == 'deeplab':
+                    from deeplab.eval_teeth import DeepLabModel
                     model = DeepLabModel(frozen_path)
-                except FileNotFoundError:
-                    warnings.warn(f'frozen:"{frozen_path}" not exists.')
-                    continue
+                elif model_config['type'] == 'hrnet':
+                    from hrnet.tools.eval_teeth import HRNetModel
+                    model = HRNetModel(frozen_path, frozen['cfg'])
                 else:
-                    for dataset_name in self.tasks['datasets']:
-                        print(f'==> Evaluating dataset: {dataset_name}')
-                        if not dataset_name in self.datasets:
-                            warnings.warn(
-                                f'dataset:"{dataset_name}" not define in config file.')
-                            continue
-                        dataset_config = self.datasets[dataset_name]
-                        datset_base_path = Path(dataset_config['path'])
-                        gt_path = dataset_config['gt']
-                        image_dir = datset_base_path / 'JPEGImages'
-                        out_dir = datset_base_path / 'result'
-                        model.run_dir(image_dir, out_dir)
-                        self._eval_docx(datset_base_path, gt_path,
-                                        dataset_name, model_name, iters)
+                    raise Exception("model type not supported.")
+
+            # except FileNotFoundError:
+                # warnings.warn(f'frozen:"{frozen_path}" not exists.')
+                # continue
+            # else:
+                for dataset_name in self.tasks['datasets']:
+                    print(f'==> Evaluating dataset: {dataset_name}')
+                    if not dataset_name in self.datasets:
+                        warnings.warn(
+                            f'dataset:"{dataset_name}" not define in config file.')
+                        continue
+                    dataset_config = self.datasets[dataset_name]
+                    datset_base_path = Path(dataset_config['path'])
+                    gt_path = dataset_config['gt']
+                    image_dir = datset_base_path / 'JPEGImages'
+                    out_dir = datset_base_path / 'result'
+                    if out_dir.exists():
+                        shutil.rmtree(out_dir)
+                    out_dir.mkdir()
+                    model.run_dir(image_dir, out_dir)
+                    self._eval_docx(datset_base_path, gt_path,
+                                    dataset_name, model_name, iters)
 
     def _eval_docx(self, base_path, gt, dataset_name, model_name, iters, tumb_size=(100, 100)):
         doc_path = Path('docs/')
@@ -143,8 +152,8 @@ class EvalMetirc(object):
             teeth_res_vis_path = vis_result_tumb / (key + '.jpg')
             teeth_numpy_path = numpy_result / (key + '.npy')
 
-            if np.load(teeth_numpy_path).shape != (513, 513):
-                continue
+            # if np.load(teeth_numpy_path).shape != (513, 513):
+            #     continue
 
             iou, acc = self._compute_metric(teeth_numpy_path, gt_img_path)
 
@@ -158,6 +167,8 @@ class EvalMetirc(object):
             self._docx_add_row(
                 row, [source_img_tumb_path, gt_vis_tumb_path, teeth_res_vis_path], iou, acc)
 
+        import ipdb
+        ipdb.set_trace()
         miou = iou_sum / count
         macc = acc_sum / count
         paragraph.add_run(f"MIOU:{miou}, MACC:{macc}")
@@ -208,6 +219,8 @@ class EvalMetirc(object):
 
     def _export_model(self):
         for name, model in self.models.items():
+            if model['type'] != 'deeplab':
+                continue
             export = model['export']
             override = export['override']
 
@@ -268,12 +281,15 @@ class EvalMetirc(object):
             self.datasets[dataset['name']] = option
         for model in config['models']:
             self.models[model['name']] = {
+                'type': model['type'],
                 'export': model['export'],
                 'frozens': model['frozens']
             }
 
     def _compute_metric(self, pred_path, gt_path):
         res_np = np.load(pred_path).astype('uint8')
+        import ipdb
+        ipdb.set_trace()
         gt_img = Image.open(gt_path).resize(res_np.shape[-2:])
         gt_np = np.asarray(gt_img, dtype='uint8').copy()
         gt_np[gt_np == 125] = 1
