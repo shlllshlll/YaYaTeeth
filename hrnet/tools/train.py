@@ -31,6 +31,7 @@ from hrnet.core.criterion import CrossEntropy, OhemCrossEntropy
 from hrnet.core.function import train, validate
 from hrnet.utils.modelsummary import get_model_summary
 from hrnet.utils.utils import create_logger, FullModel
+from hrnet.utils.preprocess import filter_dataset
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train segmentation network')
@@ -87,6 +88,7 @@ def main():
     shutil.copytree(os.path.join(this_dir, '../models'), models_dst_dir)
 
     # prepare data
+    filter_dataset()
     crop_size = (config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
     train_dataset = eval('datasets.'+config.DATASET.DATASET)(
                         root=config.DATASET.ROOT,
