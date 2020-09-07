@@ -16,6 +16,7 @@
     "models": [
         {
             "name": "0813",
+            "type": "deeplab",
             "export": {
                 "override": false,
                 "num_classes": 4,
@@ -33,6 +34,7 @@
         },
         {
             "name": "0819aug",
+            "type": "deeplab",
             "export": {
                 "override": false,
                 "num_classes": 4,
@@ -50,6 +52,7 @@
         },
         {
             "name": "0819camonly",
+            "type": "deeplab",
             "export": {
                 "override": false,
                 "num_classes": 3,
@@ -67,6 +70,7 @@
         },
         {
             "name": "teethdata0821",
+            "type": "deeplab",
             "export": {
                 "override": false,
                 "num_classes": 3,
@@ -81,6 +85,18 @@
                     "path": "trained_model/teethdata0821_233513.pb"
                 }
             ]
+        },
+        {
+            "name": "hrnet_0819camonly",
+            "type": "hrnet",
+            "export": {},
+            "frozens": [
+                {
+                    "iters": 192,
+                    "path": "output/hrnet/0819camonly/checkpoint.pth.tar",
+                    "cfg": "config/hrnet.yaml"
+                }
+            ]
         }
     ],
     "enabled": {
@@ -89,7 +105,7 @@
             "0819camonly"
         ],
         "models": [
-            "teethdata0821"
+            "hrnet_0819camonly"
         ]
     }
 }
