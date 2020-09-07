@@ -37,3 +37,12 @@ conda activate hrnet
 # 训练数据
 python hrnet/tools/train.py --cfg config/hrnet.yaml
 ```
+
+### PyTorch多版本适配
+
+```bash
+# For PyTorch 0.4.1
+PY_CMD="python"
+# For PyTorch 1.1.0
+PY_CMD="python -m torch.distributed.launch --nproc_per_node=4"
+```
