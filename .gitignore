@@ -5,3 +5,4 @@
 /eval
 .DS_store
 *.pyc
+*.code-workspace
