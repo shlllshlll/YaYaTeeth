@@ -33,40 +33,14 @@ class HRNetModel(object):
 
         self.base_dataset = BaseDataset()
 
-        model = eval('models.'+config.MODEL.NAME +
-                     '.get_seg_model')(config)
-        # dataset
-        # crop_size = (config.TRAIN.IMAGE_SIZE[1], config.TRAIN.IMAGE_SIZE[0])
-        # train_dataset = eval('datasets.'+config.DATASET.DATASET)(
-        #     root=config.DATASET.ROOT,
-        #     list_path=config.DATASET.TRAIN_SET,
-        #     num_samples=None,
-        #     num_classes=config.DATASET.NUM_CLASSES,
-        #     multi_scale=config.TRAIN.MULTI_SCALE,
-        #     flip=config.TRAIN.FLIP,
-        #     ignore_label=config.TRAIN.IGNORE_LABEL,
-        #     base_size=config.TRAIN.BASE_SIZE,
-        #     crop_size=crop_size,
-        #     downsample_rate=config.TRAIN.DOWNSAMPLERATE,
-        #     scale_factor=config.TRAIN.SCALE_FACTOR)
-        # # criterion
-        # if config.LOSS.USE_OHEM:
-        #     criterion = OhemCrossEntropy(ignore_label=config.TRAIN.IGNORE_LABEL,
-        #                                  thres=config.LOSS.OHEMTHRES,
-        #                                  min_kept=config.LOSS.OHEMKEEP,
-        #                                  weight=train_dataset.class_weights)
-        # else:
-        #     criterion = CrossEntropy(ignore_label=config.TRAIN.IGNORE_LABEL,
-        #                              weight=train_dataset.class_weights)
-
-        # model = FullModel(model, criterion)
-        model.cuda()
+        model = eval('models.'+config.MODEL.NAME + '.get_seg_model')(config)
+        model = model.cuda()
 
         # load model
         print("=>Load model weight.")
         if os.path.isfile(model_path):
             checkpoint = torch.load(model_path)
-            model.load_state_dict(checkpoint['state_dict'])
+            model.load_state_dict(checkpoint['state_dict']['model'])
         else:
             raise FileNotFoundError("The model path do not exists.")
 

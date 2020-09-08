@@ -29,34 +29,15 @@ train_model() {
             --train_logdir="./train_log_'${postfix}'"
             --dataset_dir="./tfrecord_'${postfix}'"'
         ;;
-        hrnet)
-        cmd=''${cmd_prefix}'python hrnet/tools/train.py
-            --cfg config/hrnet.yaml
-            DATASET.ROOT '${dataset_path}'/'${postfix}''
+        *)
+        cmd=''${cmd_prefix}'python '${py_cmd}' hrnet/tools/train.py
+            --cfg config/'${MODEL}'.yaml
+            LOCAL_RANK '${local_rank}'
+            DATASET.ROOT '${dataset_path}'/'${postfix}'
+            GPUS "'$gpus'"'
         ;;
     esac
 
-    eval $cmd
-}
-
-train_model_bright() {
-    cmd=''${cmd_prefix}'python deeplab/train.py
-        --logtostderr
-        --training_number_of_steps=420000
-        --train_split="train"
-        --model_variant="xception_65"
-        --atrous_rates=6
-        --atrous_rates=12
-        --atrous_rates=18
-        --output_stride=16
-        --decoder_output_stride=4
-        --train_crop_size="513,513"
-        --train_batch_size=2
-        --dataset="teeth"
-        --tf_initial_checkpoint="./pretrain/deeplab/model.ckpt"
-        --train_logdir="./train_log_bright"
-        --dataset_dir="./tfrecord_bright"
-        --fine_tune_batch_norm=False'
     eval $cmd
 }
 
@@ -113,6 +94,9 @@ fi
 cmd_flag=0
 cmd_prefix="pipenv run "
 dataset_path="/home/shlll/Dataset/teeth"
+local_rank=-1
+gpus="(0,)"
+py_cmd=""
 
 while [[ $# -gt 0 ]]
 do
@@ -122,10 +106,10 @@ case $key in
     -G|--gpu)
     check_option_flag
     GPU_DEVICE="$2"
+    export CUDA_DEVICE_ORDER="PCI_BUS_ID"
+    echo $GPU_DEVICE|[ -n "`sed -n '/^[0-9][0-9]*$/p'`" ] && export CUDA_VISIBLE_DEVICES=$GPU_DEVICE || gpus=$GPU_DEVICE
     shift # past argument
     shift # past value
-    export CUDA_DEVICE_ORDER="PCI_BUS_ID"
-    export CUDA_VISIBLE_DEVICES=$GPU_DEVICE
     ;;
     -M|--model)
     check_option_flag
@@ -137,6 +121,8 @@ case $key in
         ;;
         hrnet)
         # conda activate hrnet
+        ;;
+        hrnetocr)
         ;;
         *)
         echo "Model parameter '${MODEL}' not supported."
@@ -165,6 +151,21 @@ case $key in
         exit 1
         ;;
     esac
+    ;;
+    -R|--rank)
+    local_rank=$2
+    if echo $local_rank|[ -n "`sed -n '/^[0-9][0-9]*$/p'`" ]
+    then
+        if [ $local_rank -ge 0 ]
+        then
+            py_cmd="-m torch.distributed.launch --nproc_per_node=1"
+        fi
+    else
+        echo "Numberic value required."
+        exit 1
+    fi
+    shift
+    shift
     ;;
     build)
     check_cmd_flag
@@ -213,7 +214,7 @@ case $key in
     help)
     check_cmd_flag
     cmd_flag=1
-    echo "run.sh [-G|--gpu 0|1 -M|--model deeplab|hrnet -P|--pc s1|pc|swf] build|train_bright|train_ori|export|eval|help|eval"
+    echo "run.sh [-G|--gpu 0|1 -M|--model deeplab|hrnet|hrnetocr -P|--pc s1|pc|swf] build|train_bright|train_ori|export|eval|help|eval"
     shift
     ;;
     *)

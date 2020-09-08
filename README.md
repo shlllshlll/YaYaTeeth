@@ -1,18 +1,33 @@
 # YaYaTeeth
 
-## 一些注释
+## 环境问题
 
-### conda导出导入环境
+### 环境安装
 
 ```bash
-# 导出
-# Linux
-conda env export --no-builds | grep -v "prefix" > environment.yml
+# conda导出
+# Linux/Mac
+conda env export --no-builds | grep -v "prefix" > config/conda_env.yml
 # Windows
-conda env export --no-builds | findstr -v "prefix" > environment.yml
+conda env export --no-builds | findstr -v "prefix" > config/conda_env.yml
 
-# 导入
-conda create -n env_name -f enviroment.yml
+# conda导入
+conda create -n teeth -f config/conda_env.yml
+```
+
+### Pytorch版本适配
+
+```bash
+# For PyTorch 0.4.1
+PY_CMD="python"
+# For PyTorch 1.1.0
+PY_CMD="python -m torch.distributed.launch --nproc_per_node=1"
+```
+
+### pipenv环境安装
+
+```bash
+pipenv install
 ```
 
 ## Deeplab

@@ -23,7 +23,6 @@ import torch.backends.cudnn as cudnn
 import torch.optim
 from tensorboardX import SummaryWriter
 
-from hrnet import models
 from hrnet import datasets
 from hrnet.config import config
 from hrnet.config import update_config
@@ -42,7 +41,6 @@ def parse_args():
                         required=True,
                         type=str)
     parser.add_argument('--seed', type=int, default=304)
-    parser.add_argument("--local_rank", type=int, default=-1)
     parser.add_argument('opts',
                         help="Modify config options using the command-line",
                         default=None,
@@ -89,15 +87,16 @@ def main():
     cudnn.deterministic = config.CUDNN.DETERMINISTIC
     cudnn.enabled = config.CUDNN.ENABLED
     gpus = list(config.GPUS)
-    distributed = args.local_rank >= 0
+    distributed = config.LOCAL_RANK >= 0
     if distributed:
-        device = torch.device('cuda:{}'.format(args.local_rank))
+        device = torch.device('cuda:{}'.format(config.LOCAL_RANK))
         torch.cuda.set_device(device)
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://",
         )
 
     # build model
+    from hrnet import models
     model = eval('models.'+config.MODEL.NAME +
                  '.get_seg_model')(config)
 
@@ -107,7 +106,7 @@ def main():
     # logger.info(get_model_summary(model.cuda(), dump_input.cuda()))
 
     # copy model file
-    if distributed and args.local_rank == 0:
+    if distributed and config.LOCAL_RANK == 0:
         this_dir = os.path.dirname(__file__)
         models_dst_dir = os.path.join(final_output_dir, 'models')
         if os.path.exists(models_dst_dir):
@@ -208,14 +207,20 @@ def main():
         model = torch.nn.parallel.DistributedDataParallel(
             model,
             find_unused_parameters=True,
-            device_ids=[args.local_rank],
-            output_device=args.local_rank
+            device_ids=[config.LOCAL_RANK],
+            output_device=config.LOCAL_RANK
         )
     else:
-        model = nn.DataParallel(model, device_ids=gpus).cuda()
-    # model = nn.DataParallel(model, device_ids=gpus).cuda()
-    # model.to(f'cuda:{gpus[0]}')
-    model.cuda()
+        if len(config.GPUS) > 1:
+            model = nn.DataParallel(model, device_ids=gpus).cuda()
+        else:
+            # model.to(f'cuda:{gpus[0]}')
+            model = model.cuda()
+
+    if type(model) == FullModel:
+        saved_model = model
+    else:
+        saved_model = model.moudle
 
     # optimizer
     if config.TRAIN.OPTIMIZER == 'sgd':
@@ -257,7 +262,7 @@ def main():
             checkpoint = torch.load(model_state_file)
             best_mIoU = checkpoint['best_mIoU']
             last_epoch = checkpoint['epoch']
-            model.model.load_state_dict(checkpoint['state_dict'])
+            saved_model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             logger.info("=> loaded checkpoint (epoch {})"
                         .format(checkpoint['epoch']))
@@ -281,26 +286,26 @@ def main():
         valid_loss, mean_IoU, IoU_array = validate(
             config, testloader, model, writer_dict)
 
-        if args.local_rank <= 0:
+        if config.LOCAL_RANK <= 0:
             logger.info('=> saving checkpoint to {}'.format(
                 final_output_dir + 'checkpoint.pth.tar'))
             torch.save({
                 'epoch': epoch+1,
                 'best_mIoU': best_mIoU,
-                'state_dict': model.model.state_dict(),
+                'state_dict': saved_model.state_dict(),
                 'optimizer': optimizer.state_dict(),
             }, os.path.join(final_output_dir, 'checkpoint.pth.tar'))
             if mean_IoU > best_mIoU:
                 best_mIoU = mean_IoU
-                torch.save(model.model.state_dict(),
+                torch.save(saved_model.state_dict(),
                            os.path.join(final_output_dir, 'best.pth'))
             msg = 'Loss: {:.3f}, MeanIU: {: 4.4f}, Best_mIoU: {: 4.4f}'.format(
                 valid_loss, mean_IoU, best_mIoU)
             logging.info(msg)
             logging.info(IoU_array)
 
-    if args.local_rank <= 0:
-        torch.save(model.model.state_dict(),
+    if config.LOCAL_RANK <= 0:
+        torch.save(saved_model.state_dict(),
                    os.path.join(final_output_dir, 'final_state.pth'))
         writer_dict['writer'].close()
         end = timeit.default_timer()
