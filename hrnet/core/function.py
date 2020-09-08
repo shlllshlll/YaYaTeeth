@@ -117,8 +117,8 @@ def validate(config, testloader, model, writer_dict):
                     config.TRAIN.IGNORE_LABEL
                 )
 
-            if idx % 10 == 0:
-                print(idx)
+            # if idx % 10 == 0:
+            #     print(idx)
 
             loss = losses.mean()
             if dist.is_distributed():
