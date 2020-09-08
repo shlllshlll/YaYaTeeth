@@ -167,6 +167,8 @@ class EvalMetirc(object):
             self._docx_add_row(
                 row, [source_img_tumb_path, gt_vis_tumb_path, teeth_res_vis_path], iou, acc)
 
+        import ipdb
+        ipdb.set_trace()
         miou = iou_sum / count
         macc = acc_sum / count
         paragraph.add_run(f"MIOU:{miou}, MACC:{macc}")
@@ -286,6 +288,8 @@ class EvalMetirc(object):
 
     def _compute_metric(self, pred_path, gt_path):
         res_np = np.load(pred_path).astype('uint8')
+        import ipdb
+        ipdb.set_trace()
         gt_img = Image.open(gt_path).resize(res_np.shape[-2:])
         gt_np = np.asarray(gt_img, dtype='uint8').copy()
         gt_np[gt_np == 125] = 1

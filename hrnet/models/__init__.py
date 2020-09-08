@@ -9,3 +9,4 @@ from __future__ import division
 from __future__ import print_function
 
 from . import seg_hrnet
+from . import seg_hrnet_ocr

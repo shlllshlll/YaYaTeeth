@@ -61,6 +61,9 @@ def main():
     cudnn.enabled = config.CUDNN.ENABLED
 
     # build model
+    if torch.__version__.startswith('1'):
+        module = eval('models.'+config.MODEL.NAME)
+        module.BatchNorm2d_class = module.BatchNorm2d = torch.nn.BatchNorm2d
     model = eval('models.'+config.MODEL.NAME +
                  '.get_seg_model')(config)
 
@@ -72,11 +75,12 @@ def main():
     if config.TEST.MODEL_FILE:
         model_state_file = config.TEST.MODEL_FILE
     else:
-        model_state_file = os.path.join(final_output_dir,
-                                        'final_state.pth')
+        model_state_file = os.path.join(final_output_dir, 'final_state.pth')
     logger.info('=> loading model from {}'.format(model_state_file))
 
     pretrained_dict = torch.load(model_state_file)
+    if 'state_dict' in pretrained_dict:
+        pretrained_dict = pretrained_dict['state_dict']
     model_dict = model.state_dict()
     pretrained_dict = {k[6:]: v for k, v in pretrained_dict.items()
                         if k[6:] in model_dict.keys()}

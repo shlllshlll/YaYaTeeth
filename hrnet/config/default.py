@@ -24,6 +24,7 @@ _C.PRINT_FREQ = 20
 _C.AUTO_RESUME = False
 _C.PIN_MEMORY = True
 _C.RANK = 0
+_C.LOCAL_RANK = -1
 
 # Cudnn related params
 _C.CUDNN = CN()
@@ -35,13 +36,23 @@ _C.CUDNN.ENABLED = True
 _C.MODEL = CN()
 _C.MODEL.NAME = 'seg_hrnet'
 _C.MODEL.PRETRAINED = ''
+_C.MODEL.ALIGN_CORNERS = True
+_C.MODEL.NUM_OUTPUTS = 1
 _C.MODEL.EXTRA = CN(new_allowed=True)
+
+# OCR config
+_C.MODEL.OCR = CN()
+_C.MODEL.OCR.MID_CHANNELS = 512
+_C.MODEL.OCR.KEY_CHANNELS = 256
+_C.MODEL.OCR.DROPOUT = 0.05
+_C.MODEL.OCR.SCALE = 1
 
 _C.LOSS = CN()
 _C.LOSS.USE_OHEM = False
 _C.LOSS.OHEMTHRES = 0.9
 _C.LOSS.OHEMKEEP = 100000
-_C.LOSS.CLASS_BALANCE = True
+_C.LOSS.CLASS_BALANCE = False
+_C.LOSS.BALANCE_WEIGHTS = [1]
 
 # DATASET related params
 _C.DATASET = CN()
@@ -55,12 +66,20 @@ _C.DATASET.TEST_SET = 'list/cityscapes/val.lst'
 # training
 _C.TRAIN = CN()
 
+_C.TRAIN.FREEZE_LAYERS = ''
+_C.TRAIN.FREEZE_EPOCHS = -1
+_C.TRAIN.NONBACKBONE_KEYWORDS = []
+_C.TRAIN.NONBACKBONE_MULT = 10
+
 _C.TRAIN.IMAGE_SIZE = [1024, 512]  # width * height
 _C.TRAIN.BASE_SIZE = 2048
 _C.TRAIN.DOWNSAMPLERATE = 1
 _C.TRAIN.FLIP = True
 _C.TRAIN.MULTI_SCALE = True
 _C.TRAIN.SCALE_FACTOR = 16
+
+_C.TRAIN.RANDOM_BRIGHTNESS = False
+_C.TRAIN.RANDOM_BRIGHTNESS_SHIFT_VALUE = 10
 
 _C.TRAIN.LR_FACTOR = 0.1
 _C.TRAIN.LR_STEP = [90, 110]
@@ -99,6 +118,8 @@ _C.TEST.FLIP_TEST = False
 _C.TEST.MULTI_SCALE = False
 _C.TEST.SCALE_LIST = [1]
 
+_C.TEST.OUTPUT_INDEX = -1
+
 # debug
 _C.DEBUG = CN()
 _C.DEBUG.DEBUG = False
@@ -110,7 +131,7 @@ _C.DEBUG.SAVE_HEATMAPS_PRED = False
 
 def update_config(cfg, args):
     cfg.defrost()
-    
+
     cfg.merge_from_file(args.cfg)
     cfg.merge_from_list(args.opts)
 
@@ -121,4 +142,3 @@ if __name__ == '__main__':
     import sys
     with open(sys.argv[1], 'w') as f:
         print(_C, file=f)
-

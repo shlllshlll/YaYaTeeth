@@ -18,6 +18,7 @@ import torch
 from torch.nn import functional as F
 
 from .base_dataset import BaseDataset
+from ..config import config
 
 class PascalVOC(BaseDataset):
     def __init__(self,
@@ -98,8 +99,9 @@ class PascalVOC(BaseDataset):
     def inference(self, model, image, flip):
         size = image.size()
         pred = model(image)
-        pred = F.upsample(input=pred,
-                          size=(size[-2], size[-1]),
-                          mode='bilinear')
+        pred = F.interpolate(
+            input=pred, size=size[-2:],
+            mode='bilinear', align_corners=config.MODEL.ALIGN_CORNERS
+        )
 
         return pred.exp()
