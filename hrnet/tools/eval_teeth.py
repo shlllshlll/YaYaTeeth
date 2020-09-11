@@ -40,7 +40,11 @@ class HRNetModel(object):
         print("=>Load model weight.")
         if os.path.isfile(model_path):
             checkpoint = torch.load(model_path)
-            model.load_state_dict(checkpoint['state_dict']['model'])
+            for _ in range(len(checkpoint['state_dict'])):
+                k, v = checkpoint['state_dict'].popitem(False)
+                checkpoint['state_dict'][k[6:]
+                                         if k.startswith('model.') else k] = v
+            model.load_state_dict(checkpoint['state_dict'])
         else:
             raise FileNotFoundError("The model path do not exists.")
 
