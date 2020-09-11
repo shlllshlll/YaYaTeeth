@@ -89,10 +89,11 @@
         {
             "name": "hrnet_0819camonly",
             "type": "hrnet",
-            "export": {},
+            "export": {
+                "dir": "trained_model/"
+            },
             "frozens": [
                 {
-                    "iters": 192,
                     "path": "output/hrnet/0819camonly/checkpoint.pth.tar",
                     "cfg": "config/hrnet.yaml"
                 }

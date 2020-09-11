@@ -99,6 +99,11 @@ class EvalMetirc(object):
         vis_result = base_path / 'result_vis'
         vis_result_tumb = base_path / 'result_vis_tumb'
 
+        if vis_result.exists():
+            shutil.rmtree(vis_result)
+        if vis_result_tumb.exists():
+            shutil.rmtree(vis_result_tumb)
+
         vis_result.mkdir(exist_ok=True)
         vis_result_tumb.mkdir(exist_ok=True)
         gt_vis_tumb.mkdir(exist_ok=True)
@@ -115,12 +120,12 @@ class EvalMetirc(object):
                 (result_np_path.stem + '.jpg')
 
             # Open images and numpy arrays.
-            src_img = Image.open(str(source_img_path)).resize((513, 513))
-            gt_vis_img = np.array(Image.open(gt_vis_path))
+            res_np = np.load(str(result_np_path))
+            src_img = Image.open(str(source_img_path)).resize(res_np.shape)
+            gt_vis_img = np.array(Image.open(gt_vis_path).resize(res_np.shape))
             gt_vis_img[gt_vis_img == 1] = 128
             gt_vis_img[gt_vis_img == 2] = 255
             gt_vis_img = Image.fromarray(gt_vis_img)
-            res_np = np.load(str(result_np_path))
 
             # Draw result images.
             dst_img = src_img.copy()
@@ -129,7 +134,7 @@ class EvalMetirc(object):
             dental_point = np.vstack((y, x)).T.flatten()
             draw_img.point(list(dental_point), fill=(255, 255, 0, 64))
             # Save result images.
-            dst_img.save(res_vis_path)
+            dst_img.resize((513, 513)).save(res_vis_path)
             gt_vis_img.resize(tumb_size).save(gt_vis_tumb_path)
             dst_img.resize(tumb_size).save(res_vis_tumb_path)
             src_img.resize(tumb_size).save(source_img_tumb_path)
@@ -167,8 +172,6 @@ class EvalMetirc(object):
             self._docx_add_row(
                 row, [source_img_tumb_path, gt_vis_tumb_path, teeth_res_vis_path], iou, acc)
 
-        import ipdb
-        ipdb.set_trace()
         miou = iou_sum / count
         macc = acc_sum / count
         paragraph.add_run(f"MIOU:{miou}, MACC:{macc}")
@@ -219,33 +222,41 @@ class EvalMetirc(object):
 
     def _export_model(self):
         for name, model in self.models.items():
-            if model['type'] != 'deeplab':
-                continue
-            export = model['export']
-            override = export['override']
+            if model['type'] == 'deeplab':
+                export = model['export']
+                override = export['override']
 
-            for iters in export["iters"]:
-                frozen_path = Path(export['dir']) / f'{name}_{iters}.pb'
-                ckpt_path = f'train_log_{name}/model.ckpt-{iters}'
-                if frozen_path.exists() and not override:
-                    continue
-                cmd = f'''python deeplab/export_model.py \
-                            --atrous_rates=6 \
-                            --atrous_rates=12 \
-                            --atrous_rates=18 \
-                            --output_stride=16 \
-                            --decoder_output_stride=4 \
-                            --model_variant="xception_65" \
-                            --num_classes={export['num_classes']} \
-                            --checkpoint_path="{ckpt_path}" \
-                            --export_path="{str(frozen_path)}"
-                        '''
-                ex = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-                out, err = ex.communicate()
-                status = ex.wait()
+                for iters in export["iters"]:
+                    frozen_path = Path(export['dir']) / f'{name}_{iters}.pb'
+                    ckpt_path = f'train_log_{name}/model.ckpt-{iters}'
+                    if frozen_path.exists() and not override:
+                        continue
+                    cmd = f'''python deeplab/export_model.py \
+                                --atrous_rates=6 \
+                                --atrous_rates=12 \
+                                --atrous_rates=18 \
+                                --output_stride=16 \
+                                --decoder_output_stride=4 \
+                                --model_variant="xception_65" \
+                                --num_classes={export['num_classes']} \
+                                --checkpoint_path="{ckpt_path}" \
+                                --export_path="{str(frozen_path)}"
+                            '''
+                    ex = subprocess.Popen(
+                        cmd, stdout=subprocess.PIPE, shell=True)
+                    out, err = ex.communicate()
+                    status = ex.wait()
 
-                if not status:
-                    return status
+                    if not status:
+                        return status
+            elif model['type'] in ['hrnet', 'hrnetocr']:
+                import torch
+                frozens = model['frozens']
+                export_dir = model['export']['dir']
+                for frozen in frozens:
+                    model_path = frozen['path']
+                    frozen['iters'] = torch.load(model_path)['epoch']
+                    shutil.copy(model_path, Path(export_dir) / f"{name}_{frozen['iters']}.pth.tar")
 
         return 0
 
@@ -288,8 +299,6 @@ class EvalMetirc(object):
 
     def _compute_metric(self, pred_path, gt_path):
         res_np = np.load(pred_path).astype('uint8')
-        import ipdb
-        ipdb.set_trace()
         gt_img = Image.open(gt_path).resize(res_np.shape[-2:])
         gt_np = np.asarray(gt_img, dtype='uint8').copy()
         gt_np[gt_np == 125] = 1
