@@ -53,9 +53,10 @@ class EvalMetirc(object):
                 if model_config['type'] == 'deeplab':
                     from deeplab.eval_teeth import DeepLabModel
                     model = DeepLabModel(frozen_path)
-                elif model_config['type'] == 'hrnet':
+                elif model_config['type'] in ['hrnet', 'hrnetocr']:
                     from hrnet.tools.eval_teeth import HRNetModel
-                    model = HRNetModel(frozen_path, frozen['cfg'])
+                    model = HRNetModel(
+                        frozen_path, frozen['cfg'], model_config['type'])
                 else:
                     raise Exception("model type not supported.")
 
@@ -256,7 +257,8 @@ class EvalMetirc(object):
                 for frozen in frozens:
                     model_path = frozen['path']
                     frozen['iters'] = torch.load(model_path)['epoch']
-                    shutil.copy(model_path, Path(export_dir) / f"{name}_{frozen['iters']}.pth.tar")
+                    shutil.copy(model_path, Path(export_dir) /
+                                f"{name}_{frozen['iters']}.pth.tar")
 
         return 0
 

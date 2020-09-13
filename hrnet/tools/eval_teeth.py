@@ -25,7 +25,7 @@ from hrnet.core.criterion import CrossEntropy, OhemCrossEntropy
 
 
 class HRNetModel(object):
-    def __init__(self, model_path: str, cfg_path: str) -> None:
+    def __init__(self, model_path: str, cfg_path: str, model_type: str) -> None:
         args = type('args', (), {})()
         args.cfg = cfg_path
         args.opts = []
@@ -50,6 +50,7 @@ class HRNetModel(object):
 
         # save loaded model
         self.model = model
+        self.model_type = model_type
 
     def run(self, image: np.ndarray):
         """Runs inference on a single image.
@@ -69,6 +70,8 @@ class HRNetModel(object):
         image = torch.from_numpy(resized_image)
         image = image.cuda()
         seg_map = self.model(image)[0]
+        if self.model_type == 'hrnetocr':
+            seg_map = seg_map[0]
         seg_map = seg_map.detach()
         seg_map = torch.argmax(seg_map, dim=0)
         return resized_image, seg_map.cpu()

@@ -34,6 +34,8 @@ class FullModel(nn.Module):
 
     def forward(self, inputs, labels, *args, **kwargs):
         outputs = self.model(inputs, *args, **kwargs)
+        import ipdb
+        ipdb.set_trace()
         loss = self.loss(outputs, labels)
         return torch.unsqueeze(loss, 0), outputs
 

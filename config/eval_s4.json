@@ -98,6 +98,19 @@
                     "cfg": "config/hrnet.yaml"
                 }
             ]
+        },
+        {
+            "name": "hrnetocr_0819camonly",
+            "type": "hrnetocr",
+            "export": {
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "path": "output/hrnet_ocr/0819camonly/checkpoint.pth.tar",
+                    "cfg": "config/hrnetocr.yaml"
+                }
+            ]
         }
     ],
     "enabled": {
@@ -106,7 +119,7 @@
             "0819camonly"
         ],
         "models": [
-            "hrnet_0819camonly"
+            "hrnetocr_0819camonly"
         ]
     }
 }
