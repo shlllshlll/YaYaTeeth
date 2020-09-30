@@ -16,6 +16,7 @@ import torch
 from tqdm.auto import tqdm
 import cv2
 import numpy as np
+from PIL import Image, ImageDraw
 
 from hrnet import models, datasets
 from hrnet.datasets.base_dataset import BaseDataset
@@ -84,13 +85,17 @@ class HRNetModel(object):
         seg_map = torch.argmax(seg_map, dim=0)
         return resized_image, seg_map.cpu()
 
-    def run_dir(self, image_dir: str, output_dir: str) -> None:
+    def run_dir(self, image_dir: str, output_dir: str, save_vis: bool = False) -> None:
         image_dir = Path(image_dir)
         if not image_dir.exists():
             raise FileNotFoundError(
                 f"The input image directory '{str(image_dir)}' is not exists.")
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
+
+        vis_dir = image_dir / 'result_vis'
+        if save_vis:
+            vis_dir.mkdir(parents=True, exist_ok=True)
 
         for image_path in tqdm(list(image_dir.glob('*.jpg'))):
             print(image_path.name)
@@ -99,15 +104,33 @@ class HRNetModel(object):
             out_path = str(output_dir / (image_path.stem + '.npy'))
             np.save(out_path, seg_map)
 
+            if save_vis:
+                vis_path = vis_dir / (image_path.stem + '.png')
+                vis_img = self.get_vis_result(image_path, seg_map)
+                vis_img.save(vis_path)
+
+    def get_vis_result(self, image_path, seg_map):
+        # Open images and numpy arrays.
+        src_img = Image.open(image_path).resize(seg_map.shape)
+
+        # Draw result images.
+        dst_img = src_img.copy()
+        draw_img = ImageDraw.Draw(dst_img, mode='RGBA')
+        x, y = np.where(seg_map == 2)
+        dental_point = np.vstack((y, x)).T.flatten()
+        draw_img.point(list(dental_point), fill=(255, 255, 0, 64))
+
+        return dst_img
+
 
 if __name__ == "__main__":
     pwd = Path(os.getcwd())
-    graph_path = pwd / "model_zoo/hrnet_cocostuff_3617_torch04.pth"
-    cfg_path = pwd / "config/cocostuff/seg_hrnet_w48_520x520_ohem_sgd_lr1e-3_wd1e-4_bs_16_epoch110.yaml"
-    test_base_dir = pwd / "eval/zebra_validation_set"
+    graph_path = pwd / "output/hrnet/teeth0821/checkpoint.pth.tar"
+    cfg_path = pwd / "config/hrnet.yaml"
+    test_base_dir = pwd / "eval/20200829"
     image_dir = test_base_dir
     out_dir = test_base_dir / "outputs"
     print("=>Out dir: ", out_dir)
 
     model = HRNetModel(graph_path, cfg_path, 'hrnet')
-    model.run_dir(image_dir, out_dir)
+    model.run_dir(image_dir, out_dir, save_vis=True)

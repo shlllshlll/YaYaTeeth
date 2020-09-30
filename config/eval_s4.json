@@ -111,6 +111,32 @@
                     "cfg": "config/hrnetocr.yaml"
                 }
             ]
+        },
+        {
+            "name": "hrnet_teeth0821",
+            "type": "hrnet",
+            "export": {
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "path": "output/hrnet/teeth0821/checkpoint.pth.tar",
+                    "cfg": "config/hrnet.yaml"
+                }
+            ]
+        },
+        {
+            "name": "hrnetocr_teeth0821",
+            "type": "hrnetocr",
+            "export": {
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "path": "output/hrnet_ocr/teeth0821/checkpoint.pth.tar",
+                    "cfg": "config/hrnetocr.yaml"
+                }
+            ]
         }
     ],
     "enabled": {
@@ -119,7 +145,8 @@
             "0819camonly"
         ],
         "models": [
-            "hrnetocr_0819camonly"
+            "hrnet_teeth0821",
+            "hrnetocr_teeth0821"
         ]
     }
 }
