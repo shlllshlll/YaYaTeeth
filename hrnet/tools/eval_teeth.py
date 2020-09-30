@@ -9,6 +9,7 @@
 '''
 
 import os
+import argparse
 from pathlib import Path
 
 import torch
@@ -40,11 +41,18 @@ class HRNetModel(object):
         print("=>Load model weight.")
         if os.path.isfile(model_path):
             checkpoint = torch.load(model_path)
-            for _ in range(len(checkpoint['state_dict'])):
-                k, v = checkpoint['state_dict'].popitem(False)
-                checkpoint['state_dict'][k[6:]
-                                         if k.startswith('model.') else k] = v
-            model.load_state_dict(checkpoint['state_dict'])
+
+            if 'state_dict' in checkpoint.keys():
+                for _ in range(len(checkpoint['state_dict'])):
+                    k, v = checkpoint['state_dict'].popitem(False)
+                    checkpoint['state_dict'][k[6:]
+                                             if k.startswith('model.') else k] = v
+                model.load_state_dict(checkpoint['state_dict'])
+            else:
+                for _ in range(len(checkpoint)):
+                    k, v = checkpoint.popitem(False)
+                    checkpoint[k[6:] if k.startswith('model.') else k] = v
+                model.load_state_dict(checkpoint)
         else:
             raise FileNotFoundError("The model path do not exists.")
 
@@ -84,8 +92,22 @@ class HRNetModel(object):
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        for image_path in tqdm(list(image_dir.glob('*'))):
+        for image_path in tqdm(list(image_dir.glob('*.jpg'))):
+            print(image_path.name)
             image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
             _, seg_map = self.run(image)
             out_path = str(output_dir / (image_path.stem + '.npy'))
             np.save(out_path, seg_map)
+
+
+if __name__ == "__main__":
+    pwd = Path(os.getcwd())
+    graph_path = pwd / "model_zoo/hrnet_cocostuff_3617_torch04.pth"
+    cfg_path = pwd / "config/cocostuff/seg_hrnet_w48_520x520_ohem_sgd_lr1e-3_wd1e-4_bs_16_epoch110.yaml"
+    test_base_dir = pwd / "eval/zebra_validation_set"
+    image_dir = test_base_dir
+    out_dir = test_base_dir / "outputs"
+    print("=>Out dir: ", out_dir)
+
+    model = HRNetModel(graph_path, cfg_path, 'hrnet')
+    model.run_dir(image_dir, out_dir)

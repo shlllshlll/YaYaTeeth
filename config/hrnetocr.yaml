@@ -86,7 +86,7 @@ TRAIN:
   END_EPOCH: 2000
   RESUME: true
   OPTIMIZER: sgd
-  LR: 0.001
+  LR: 0.005
   WD: 0.0001
   MOMENTUM: 0.9
   NESTEROV: false
