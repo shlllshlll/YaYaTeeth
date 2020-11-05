@@ -11,6 +11,11 @@
             "base": "eval/0819camonly",
             "gt": "SegmentationClass",
             "ori_path": "/home/shlll/Dataset/teeth/0819camonly"
+        },
+        {
+            "name": "20201103",
+            "base": "eval/20201103",
+            "gt": "SegmentationClass"
         }
     ],
     "models": [
@@ -126,6 +131,19 @@
             ]
         },
         {
+            "name": "hrnet_teethdata0922",
+            "type": "hrnet",
+            "export": {
+                "dir": "trained_model/"
+            },
+            "frozens": [
+                {
+                    "path": "output/hrnet/teethdata0922/checkpoint.pth.tar",
+                    "cfg": "config/hrnet.yaml"
+                }
+            ]
+        },
+        {
             "name": "hrnetocr_teeth0821",
             "type": "hrnetocr",
             "export": {
@@ -141,12 +159,10 @@
     ],
     "enabled": {
         "datasets": [
-            "teethdata0814",
-            "0819camonly"
+            "20201103"
         ],
         "models": [
-            "hrnet_teeth0821",
-            "hrnetocr_teeth0821"
+            "hrnet_teethdata0922"
         ]
     }
 }
